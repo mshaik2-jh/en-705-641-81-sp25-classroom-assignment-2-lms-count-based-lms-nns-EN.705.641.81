@@ -48,7 +48,7 @@ def create_ngrams(data, n, splitter, tokenizer):
 
             # TODO: tokenize the words in the sentence
             # name the list of tokens as 'tokens'
-
+            tokens = tokenizer.tokenize(sentence)
             # Your code ends here
 
             # drop short sentences
@@ -66,6 +66,13 @@ def create_ngrams(data, n, splitter, tokenizer):
                 #   and its occurrence count as values
                 # - 'next_word_candidates' is a dictionary with tuple of the context
                 #   (i.e. the (n-1)-grams) as keys and a set of possible next words as values
+                n_gram = tuple(tokens[idx:idx+n])
+                context = n_gram[:-1]
+
+                ngrams[n_gram] += 1
+                ngram_context[context] += 1
+
+                next_word_candidates[context].add(n_gram[-1])
 
                 # Your code ends here
 
@@ -87,6 +94,10 @@ def create_ngrams(data, n, splitter, tokenizer):
             # TODO: compute the estimated probability of the next word given the context
             # hint: use the counters 'ngrams' and 'ngram_context' you have created above
 
+            # probability of next word given context = count(context+nw)/count(context)
+            ngram = (*context, nw)
+            proba = ngrams[ngram] / ngram_context[context]
+            scores.append(proba)
             # Your code ends here
 
         # record the most probable next word as the prediction
@@ -118,8 +129,18 @@ def plot_next_word_prob(word_scores, word_candidates, context, top=10, save_path
     # - word_candidates is a dictionary with tuple of the context as keys and a list of possible next words as values (the sorted_next_word_candidates in create_ngrams function)
     # - for a given context, elements in word_scores[context] and word_candidates[context] have one-to-one correspondence
     # - context is a tuple of words
+    scores = word_scores[context]
+    candidates = word_candidates[context]
+    # words are sorted alphabetically, need to sort by probability
+    sorted_idx = np.argsort(scores)[::-1] #descending
+    top_ten_idx = sorted_idx[:top]
 
-
+    plt.figure() # new plot
+    plt.bar([candidates[i] for i in top_ten_idx], [scores[i] for i in top_ten_idx])
+    plt.title(f'Next Word Probabilities After {context}')
+    plt.xlabel(f'Next Word')
+    plt.ylabel(f'Probabilities')
+    plt.savefig(save_path) 
     # Your code ends here
 
 
