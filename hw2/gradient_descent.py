@@ -116,7 +116,17 @@ class SentimentClassifier(nn.Module):
         # Hint: follow the hints in the pdf description
         # - logits is a tensor of shape (batch_size, num_classes)
         # - return a tensor of shape (batch_size, num_classes) with the softmax of the logits
-        return
+        softmax = []
+        for i in range(logits.shape[0]): #for each batch
+            batch_logits = logits[i]
+            c = torch.max(batch_logits)
+            batch_logits = batch_logits - c
+
+            exp_vals = torch.exp(batch_logits)
+            batch_softmax = exp_vals / torch.sum(exp_vals)
+
+            softmax.append(batch_softmax)
+        return torch.stack(softmax)
         # your code ends here
 
     # The function that perform backward pass
@@ -129,6 +139,16 @@ class SentimentClassifier(nn.Module):
         # - grads_weights: a tensor of shape (num_classes, embed_dim) that is the gradient of linear layer's weights
         # - grads_bias: a tensor of shape (num_classes,) that is the gradient of linear layer's bias
         # - loss: a scalar that is the cross entropy loss, averaged over the batch
+        y_pred = self.softmax(logits)
+        y_onehot = torch.zeros_like(y_pred)
+        y_onehot[torch.arange(bsz), labels] = 1
+
+        diff = (y_pred - y_onehot)
+
+
+        grads_weights = ((inp.T@diff)/bsz).T
+        grads_bias = diff.sum(dim=0)/bsz
+        loss = -torch.sum(y_onehot*torch.log(y_pred))/bsz
 
         # your code ends here
 
@@ -208,7 +228,8 @@ def train(model: SentimentClassifier,
             # since we are doing gradient descent manually
             with torch.no_grad():
                 # TODO: complete the gradient descent update for the linear layer's weights and bias
-                pass
+                model.linear.weight.sub_(learning_rate*grads_weights)
+                model.linear.bias.sub_(learning_rate*grads_bias)
                 # your code ends here
 
             # record the loss and accuracy
